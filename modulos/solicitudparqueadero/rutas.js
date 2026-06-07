@@ -1,0 +1,151 @@
+const express = require('express');
+const respuesta =  require('../../red/respuestas.js');
+const controlador = require('./index.js');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+
+// Configuración de almacenamiento de Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Al estar rutas.js en la misma carpeta que la carpeta uploads:
+        const rutaDestino = path.join(__dirname, 'uploads');
+        cb(null, rutaDestino);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Definimos los campos que recibirá la API
+const cargarDocumentos = upload.fields([
+    { name: 'soat', maxCount: 1 },
+    { name: 'tecnoMecanica', maxCount: 1 },
+    { name: 'tarjetaPropiedad', maxCount: 1 }
+]);
+
+
+router.post('/', cargarDocumentos, agregarParqueadero);
+
+router.get('/', todosParqueadero);
+router.get('/:id', unoParqueadero);
+//router.post('/', agregarParqueadero);
+router.delete('/:id', eliminarParqueadero);
+router.put('/', actualizarParqueadero);
+
+
+async function todosParqueadero(req, res, next) {
+    try {
+        const items = await controlador.todosParqueadero();
+        
+        // 1. Obtenemos el protocolo y el host (ej: http://localhost:4000)
+        // Esto hace que tu código funcione tanto en tu PC como cuando lo subas a internet
+        const host = `${req.protocol}://${req.get('host')}`;
+
+        // 2. Mapeamos los resultados para añadir las rutas de descarga/visualización
+        const itemsConArchivos = items.map(item => {
+            return {
+                ...item,
+                // Creamos las URLs completas apuntando a la ruta estática /uploads
+                soatUrl: item.soat ? `${host}/uploads/${item.soat}` : null,
+                tecnoMecanicaUrl: item.tecnoMecanica ? `${host}/uploads/${item.tecnoMecanica}` : null,
+                tarjetaPropiedadUrl: item.tarjetaPropiedad ? `${host}/uploads/${item.tarjetaPropiedad}` : null
+            };
+        });
+
+        console.log("Se procesaron las URLs de documentos para las solicitudes");
+        
+        // 3. Enviamos la lista ya enriquecida con las URLs
+        respuesta.success(req, res, itemsConArchivos, 200);
+        
+    } catch (err) {
+        next(err);
+    }
+};
+
+ async function unoParqueadero (req, res, next) {
+    try{ 
+        const items = await controlador.unoParqueadero(req.params.id);
+        respuesta.success(req, res, items, 200);
+    }catch(err){
+         next(err);
+    }
+};
+
+
+async function agregarParqueadero(req, res, next) {
+    try {
+        const archivos = req.files || {};
+        
+        // Log para ver qué está llegando realmente desde el Front
+        console.log('Cuerpo recibido:', req.body);
+
+        let fechaLimpia = null;
+        
+        // Validación de seguridad para evitar el error del .split()
+        if (req.body.fechaSolicitud && typeof req.body.fechaSolicitud === 'string') {
+            try {
+                // Si la fecha trae la 'T' de ISO (ej: 2026-05-03T04:59:59)
+                if (req.body.fechaSolicitud.includes('T')) {
+                    fechaLimpia = req.body.fechaSolicitud.split('T')[0] + ' ' + req.body.fechaSolicitud.split('T')[1].split('.')[0];
+                } else {
+                    // Si ya viene limpia o en otro formato, la dejamos como está
+                    fechaLimpia = req.body.fechaSolicitud;
+                }
+            } catch (e) {
+                console.log("Error formateando fecha, se usará valor original");
+                fechaLimpia = req.body.fechaSolicitud;
+            }
+        }
+
+        const datosSolicitud = {
+            ...req.body,
+            fechaSolicitud: fechaLimpia,
+            soat: archivos['soat'] ? archivos['soat'][0].filename : null,
+            tecnoMecanica: archivos['tecnoMecanica'] ? archivos['tecnoMecanica'][0].filename : null,
+            tarjetaPropiedad: archivos['tarjetaPropiedad'] ? archivos['tarjetaPropiedad'][0].filename : null
+        };
+
+        // ... resto de tu código (validación de archivos y llamado al controlador)
+        if (!datosSolicitud.soat || !datosSolicitud.tecnoMecanica || !datosSolicitud.tarjetaPropiedad) {
+             return respuesta.error(req, res, 'Faltan documentos obligatorios', 400);
+        }
+
+        const items = await controlador.agregarParqueadero(datosSolicitud);
+        respuesta.success(req, res, 'Su solicitud ha sido radicada correctamente para el próximo sorteo', 201);
+
+    } catch (err) {
+        console.error("Error en agregarParqueadero:", err);
+        next(err);
+    }
+};
+ async function eliminarParqueadero (req, res, next) {
+    try{ 
+        
+            const items = await controlador.eliminarParqueadero(req.params.id);
+            respuesta.success(req, res, 'Parqueadero eliminado satisfactoriamente', 200);
+            //console.log("exitoso")
+
+           respuesta.error(req, res, 'No se encontro el Parqueadero', 206);
+
+    }catch(err){
+        //console.log("error")
+        next(err);
+    }
+};
+
+async function actualizarParqueadero(req, res, next) {
+    try {
+        // La validación de los datos completos podría hacerse aquí
+        const items = await controlador.actualizarParqueadero(req.body);
+        const mensaje = 'Parqueadero actualizado con exito';
+
+        respuesta.success(req, res, mensaje, 200);
+    } catch (err) {
+        next(err);
+    }
+};
+
+module.exports = router;

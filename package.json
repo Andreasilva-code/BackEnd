@@ -1,0 +1,37 @@
+
+{
+   "name": "paginaprados2",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "node",
+    "js"
+  ],
+
+  "repository": {
+    "type": "git",
+    "url": "(index.js)"
+  },
+  "license": "ISC",
+  "author": "undefined",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon /paginaprados2/index.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.1.0",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.22.2",
+    "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    
+  },
+
+  "descripcion": "Este es un proyecto del SENA"
+}
+
+
