@@ -17,6 +17,7 @@ const solicitudtrasteos = require('./modulos/solicitudtrasteos/rutas');
 const solicitudsalonessociales = require('./modulos/solicitudsalonessociales/rutas');
 const parqueaderovisitante = require('./modulos/parqueaderovisitante/rutas');
 const pqrs= require('./modulos/pqrs/rutas');
+const valoresparqueaderovisitantes= require('./modulos/valoresparqueaderovisitantes/rutas');
 
 const error = require('./red/errors');
 
@@ -52,7 +53,7 @@ app.use('/api/solicitudtrasteos', solicitudtrasteos);
 app.use('/api/solicitudsalonessociales', solicitudsalonessociales);
 app.use('/api/parqueaderovisitante', parqueaderovisitante);
 app.use('/api/pqrs', pqrs);
-
+app.use('/api/valoresparqueaderovisitantes', valoresparqueaderovisitantes);
 // Middleware de errores (Siempre al final)
 app.use(error);
 

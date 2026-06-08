@@ -382,7 +382,7 @@ function todosSolicitudSalonesSociales(tabla){
     });
  }
 
-/* QUERYS Parqueadero*/
+/* QUERYS Parqueadero Visitante */
 
 function agregarParqueaderoVisitante (tabla, data){
     return new Promise( (resolve, reject) => {
@@ -392,6 +392,57 @@ function agregarParqueaderoVisitante (tabla, data){
     });
  }
 function todosParqueaderoVisitante(tabla){
+    return new Promise( (resolve, reject) => {
+        conexion.query(`SELECT * FROM ${tabla}`, (error, result) => {
+            return error ? reject(error) : resolve(result);
+        })
+    });
+ }
+
+function liquidarParqueaderoVisitante(tabla, placa, horaIngreso, data) {
+    return new Promise((resolve, reject) => {
+        const sql = `UPDATE ${tabla} SET ? WHERE placa = ? AND DATE(horaIngreso) = DATE(?)`;
+        conexion.query(sql, [data, placa, horaIngreso], (error, result) => {
+            return error ? reject(error) : resolve(result);
+        });
+    });
+}
+
+function consultarExistenteParqueaderoVisitante(tabla, placa, horaIngreso) {
+    return new Promise((resolve, reject) => {
+        // Usamos DATE() para extraer solo la parte de 'año-mes-día' 
+        // y compararla con el parámetro recibido.
+        const sql = `SELECT * FROM ${tabla} WHERE placa = ? AND DATE(horaIngreso) = DATE(?)`;
+        const params = [placa, horaIngreso];
+
+        conexion.query(sql, params, (error, result) => {
+            if (error) {
+                return reject(error);
+            }
+            resolve(result);
+        });
+    });
+}  
+
+function consultarRegistroPorFiltroParqueaderoVisitante(tabla, placa, horaIngreso) {
+    return new Promise((resolve, reject) => {
+        // Usamos DATE() para extraer solo la parte de 'año-mes-día' 
+        // y compararla con el parámetro recibido.
+        const sql = `SELECT * FROM ${tabla} WHERE placa = ? AND DATE(horaIngreso) = DATE(?)`;
+        const params = [placa, horaIngreso];
+
+        conexion.query(sql, params, (error, result) => {
+            if (error) {
+                return reject(error);
+            }
+            resolve(result);
+        });
+    });
+} 
+
+/* QUERYS Valores Parqueadero Visitante */
+
+function todosValoresParqueaderoVisitantes(tabla){
     return new Promise( (resolve, reject) => {
         conexion.query(`SELECT * FROM ${tabla}`, (error, result) => {
             return error ? reject(error) : resolve(result);
@@ -484,9 +535,13 @@ module.exports = {
     agregarSolicitudSalonesSociales,
     agregarParqueaderoVisitante,
     todosParqueaderoVisitante,
+    liquidarParqueaderoVisitante,
     todosPqrs,
     unoPqrs,
     agregarPqrs,
     eliminarPqrs,
     actualizarEstadoPqrs,
+    consultarExistenteParqueaderoVisitante,
+    consultarRegistroPorFiltroParqueaderoVisitante,
+    todosValoresParqueaderoVisitantes,
 }
