@@ -437,8 +437,40 @@ function consultarRegistroPorFiltroParqueaderoVisitante(tabla, placa, horaIngres
             }
             resolve(result);
         });
+        
     });
 } 
+
+function obtenerarqueo(tabla, fechaInicio, fechaFin) {
+    return new Promise((resolve, reject) => {
+        // SQL inteligente: Cuenta y suma según el tipo de vehículo en el rango dado
+        const sql = `
+            SELECT 
+                COUNT(IF(tipoParqueadero = 'Carro', 1, NULL)) AS totalCarrosLiquidados,
+                COUNT(IF(tipoParqueadero = 'Moto', 1, NULL)) AS totalMotosLiquidados,
+                COUNT(*) AS totalVehiculosLiquidados,
+                SUM(IF(tipoParqueadero = 'Carro', valorParqueadero, 0)) AS recaudadoCarros,
+                SUM(IF(tipoParqueadero = 'Moto', valorParqueadero, 0)) AS recaudadoMotos,
+                SUM(valorParqueadero) AS recaudadoTotal,
+                SUM(horasDescuento) AS totalHorasDescuentoAplicadas
+            FROM ${tabla}
+            WHERE estado = 'Liquidado' 
+              AND horaSalida BETWEEN ? AND ?
+        `;
+
+        conexion.query(sql, [fechaInicio, fechaFin], (error, result) => {
+            if (error) return reject(error);
+            // Como las funciones de agregación devuelven una sola fila, resolvemos el primer índice
+            resolve(result[0] || {});
+        });
+    });
+}
+
+// Wrapper con camelCase para compatibilidad con los controladores
+function obtenerArqueo(tabla, fechaInicio, fechaFin) {
+    return obtenerarqueo(tabla, fechaInicio, fechaFin);
+}
+
 
 /* QUERYS Valores Parqueadero Visitante */
 
@@ -449,6 +481,7 @@ function todosValoresParqueaderoVisitantes(tabla){
         })
     });
  }
+
 
 /* QUERYS Pqrs*/
 
@@ -544,4 +577,6 @@ module.exports = {
     consultarExistenteParqueaderoVisitante,
     consultarRegistroPorFiltroParqueaderoVisitante,
     todosValoresParqueaderoVisitantes,
+    obtenerarqueo,
+    obtenerArqueo,
 }

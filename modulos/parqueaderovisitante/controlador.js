@@ -39,12 +39,20 @@ function consultarRegistroPorFiltroParqueaderoVisitante (placa, horaIngreso) {
     return db.consultarRegistroPorFiltroParqueaderoVisitante(TABLA, placa, horaIngreso)
 }
 
+// Asegúrate de que reciba 'db' e inyecte la tabla correctamente
+function obtenerArqueo(fechaInicio, fechaFin) {
+        // Pasamos la tabla y las fechas al modelo de datos
+        return db.obtenerArqueo(TABLA, fechaInicio, fechaFin)
+}
+
+
 return{ 
     todosParqueaderoVisitante,
     agregarParqueaderoVisitante,
     liquidarParqueaderoVisitante,
     consultarExistenteParqueaderoVisitante,
     consultarRegistroPorFiltroParqueaderoVisitante,
+    obtenerArqueo,
 
 }
 }

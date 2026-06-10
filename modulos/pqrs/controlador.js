@@ -32,7 +32,7 @@ return{
     unoPqrs,
     agregarPqrs,
     eliminarPqrs,
-    actualizarEstadoPqrs
+    actualizarEstadoPqrs,
 }
 }
 
