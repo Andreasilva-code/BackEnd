@@ -1,15 +1,17 @@
 const express = require('express');
 const respuesta =  require('../../red/respuestas.js');
-//const { eliminar } = require('../arrendatario/index.js');
 const controlador = require('./index.js');
-//const controlador = require('./controlador')();
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-router.get('/', todosPropietario);
-router.get('/:id', unoPropietario);
-router.post('/', agregarPropietario);
-router.put('/', actualizarPropietario);
-router.delete('/:id', eliminarPorIdPropietario);
+// Rutas protegidas: admin solo puede listar todos
+router.get('/', verificarJWT, verificarRol('administrador'), todosPropietario);
+// Ruta protegida: cualquier usuario autenticado con roles permitidos puede ver por id
+router.get('/:id', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), unoPropietario);
+// Rutas protegidas: solo admin puede crear, actualizar y eliminar
+router.post('/', verificarJWT, verificarRol('administrador'), agregarPropietario);
+router.put('/', verificarJWT, verificarRol('administrador'), actualizarPropietario);
+router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarPorIdPropietario);
 
 async function todosPropietario (req, res, next) {
     try{

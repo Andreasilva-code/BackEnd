@@ -1,9 +1,11 @@
 const express = require('express');
 const respuesta =  require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-router.get('/', todosValoresParqueaderoVisitantes);
+// Protegido: admin y vigilante pueden ver tarifas
+router.get('/', verificarJWT, verificarRol('administrador', 'vigilante'), todosValoresParqueaderoVisitantes);
 //router.get('/:id', uno);
 //router.post('/', agregarParqueaderoVisitante);
 //router.delete('/:id', eliminar);

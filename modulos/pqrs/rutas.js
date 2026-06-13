@@ -1,6 +1,7 @@
 const express = require('express');
 const respuesta = require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
@@ -17,11 +18,16 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 const cargarEvidencia = upload.single('evidencia');
 
-router.get('/', todosPqrs);
-router.post('/', cargarEvidencia, agregarPqrs);
-router.put('/', actualizarEstadoPqrs);
-router.delete('/:id', eliminarPqrs);
-router.get('/propietario/:identificacion', consultarPqrsPropietario);
+// Rutas protegidas: permitido para todos los roles autenticados
+router.get('/', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), todosPqrs);
+// Crear PQRS: cualquier usuario autenticado
+router.post('/', verificarJWT, cargarEvidencia, agregarPqrs);
+// Actualizar estado: solo admin
+router.put('/', verificarJWT, verificarRol('administrador'), actualizarEstadoPqrs);
+// Eliminar: solo admin
+router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarPqrs);
+// Consultar PQRS por propietario: cualquier usuario autenticado
+router.get('/propietario/:identificacion', verificarJWT, consultarPqrsPropietario);
 
 async function todosPqrs(req, res, next) {
     try {

@@ -1,6 +1,7 @@
 const express = require('express');
 const respuesta =  require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
@@ -26,14 +27,17 @@ const cargarDocumentos = upload.fields([
     { name: 'tarjetaPropiedad', maxCount: 1 }
 ]);
 
+// Crear solicitud: admin, propietario y arrendatario
+router.post('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), cargarDocumentos, agregarParqueadero);
 
-router.post('/', cargarDocumentos, agregarParqueadero);
-
-router.get('/', todosParqueadero);
-router.get('/:id', unoParqueadero);
-//router.post('/', agregarParqueadero);
-router.delete('/:id', eliminarParqueadero);
-router.put('/', actualizarParqueadero);
+// Listar: solo admin
+router.get('/', verificarJWT, verificarRol('administrador'), todosParqueadero);
+// Ver uno: solo admin
+router.get('/:id', verificarJWT, verificarRol('administrador'), unoParqueadero);
+// Eliminar: solo admin
+router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarParqueadero);
+// Actualizar: solo admin
+router.put('/', verificarJWT, verificarRol('administrador'), actualizarParqueadero);
 
 
 async function todosParqueadero(req, res, next) {

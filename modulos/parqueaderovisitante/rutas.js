@@ -1,18 +1,20 @@
 const express = require('express');
 const respuesta =  require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 const controladorValores = require('../valoresparqueaderovisitantes/index.js');
 
-router.get('/', todosParqueaderoVisitante);
-//router.get('/:id', uno);
-router.post('/', agregarParqueaderoVisitante);
-//router.delete('/:id', eliminar);
-//router.put('/', actualizarArrendatario);
-router.post('/liquidar', liquidarParqueaderoVisitante);
-router.get('/:placa/:horaIngreso', consultarExistenteParqueaderoVisitante);
-router.get('/consultarregistroporfiltro/:placa/:horaIngreso', consultarRegistroPorFiltroParqueaderoVisitante);
-router.post('/arqueo', obtenerArqueo);
+// Protegido: admin y vigilante pueden listar todos
+router.get('/', verificarJWT, verificarRol('administrador', 'vigilante'), todosParqueaderoVisitante);
+// Crear parqueadero visitante: admin y vigilante
+router.post('/', verificarJWT, verificarRol('administrador', 'vigilante'), agregarParqueaderoVisitante);
+// Liquidar y arqueo: admin y vigilante
+router.post('/liquidar', verificarJWT, verificarRol('administrador', 'vigilante'), liquidarParqueaderoVisitante);
+router.post('/arqueo', verificarJWT, verificarRol('administrador', 'vigilante'), obtenerArqueo);
+// Consultas: admin y vigilante
+router.get('/:placa/:horaIngreso', verificarJWT, verificarRol('administrador', 'vigilante'), consultarExistenteParqueaderoVisitante);
+router.get('/consultarregistroporfiltro/:placa/:horaIngreso', verificarJWT, verificarRol('administrador', 'vigilante'), consultarRegistroPorFiltroParqueaderoVisitante);
 
 function formatMySQLDatetime(dateStrOrObj) {
     if (!dateStrOrObj) return null;

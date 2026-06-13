@@ -10,11 +10,11 @@ const router = express.Router();
 router.post('/login', loginUsuarios);
 
 // Rutas protegidas
-router.get('/consultaporcorreo/:correo', verificarJWT, consultaPorCorreo);
+router.get('/consultaporcorreo/:correo', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), consultaPorCorreo);
 router.get('/', verificarJWT, verificarRol('administrador'), todosUsuarios);
-router.get('/:id', verificarJWT, unoUsuarios);
+router.get('/:id', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), unoUsuarios);
 router.post('/', verificarJWT, verificarRol('administrador'), agregarUsuarios);
-router.put('/', verificarJWT, actualizarUsuarios);
+router.put('/', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), actualizarUsuarios);
 router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarUsuarios);
 
 // Middleware de validación (ejemplo básico)

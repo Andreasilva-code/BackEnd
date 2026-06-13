@@ -1,11 +1,13 @@
 const express = require('express');
 const respuesta =  require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-router.get('/', todosSolicitudTrasteos);
-//router.get('/:id', uno);
-router.post('/', agregarSolicitudTrasteos);
+// Listar solicitudes: solo admin
+router.get('/', verificarJWT, verificarRol('administrador'), todosSolicitudTrasteos);
+// Crear solicitud: admin, propietario y arrendatario
+router.post('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), agregarSolicitudTrasteos);
 //router.delete('/:id', eliminar);
 //router.put('/', actualizarArrendatario);
 

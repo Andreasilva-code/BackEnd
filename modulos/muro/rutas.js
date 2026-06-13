@@ -1,11 +1,13 @@
 const express = require('express');
 const respuesta = require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-
-router.post('/', agregarHistoria);
-router.get('/', listarHistorias);
+// Listar historias: permitido para todos los roles autenticados
+router.get('/', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), listarHistorias);
+// Crear historia: cualquier usuario autenticado
+router.post('/', verificarJWT, agregarHistoria);
 
 async function listarHistorias(req, res, next) {
     try {

@@ -1,9 +1,11 @@
 const express = require('express');
 const respuesta = require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-router.get('/:id', unoFuncionarios);
+// Protegido: administrador y vigilante pueden ver funcionario por id
+router.get('/:id', verificarJWT, verificarRol('administrador', 'vigilante'), unoFuncionarios);
 
 async function unoFuncionarios(req, res, next) {
     try { 
