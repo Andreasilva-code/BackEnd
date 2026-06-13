@@ -1,5 +1,7 @@
 const TABLA = 'usuarios';
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('../../config');
 
 module.exports = function (dbInyectada) {
 
@@ -72,9 +74,18 @@ module.exports = function (dbInyectada) {
 
             if (coincide) {
                 // Autenticación correcta
-                // opcional: eliminar clave antes de retornar
+                // eliminamos la clave antes de retornar
                 delete usuario.clave;
-                return usuario;
+
+                const payload = {
+                    idUsuarios: usuario.idUsuarios,
+                    correo: usuario.correo,
+                    rol: usuario.rol
+                };
+
+                const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+
+                return { usuario, token };
             }
 
             // 4. Compatibilidad: si la contraseña en la BD está en texto plano,
@@ -85,7 +96,15 @@ module.exports = function (dbInyectada) {
                     await db.actualizarUsuarios(TABLA, { idUsuarios: usuario.idUsuarios, clave: nuevoHash });
                     usuario.clave = nuevoHash;
                     delete usuario.clave;
-                    return usuario;
+
+                    const payload = {
+                        idUsuarios: usuario.idUsuarios,
+                        correo: usuario.correo,
+                        rol: usuario.rol
+                    };
+                    const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+
+                    return { usuario, token };
                 } catch (e) {
                     console.error('Error al re-hashear contraseña antigua:', e);
                     return null;

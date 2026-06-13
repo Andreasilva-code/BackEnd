@@ -1,16 +1,21 @@
 const express = require('express');
 const respuesta = require('../../red/respuestas.js');
 const controlador = require('./index.js');
+const config = require('../../config');
+const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
 
-router.get('/', todosUsuarios);
-router.get('/:id', unoUsuarios);
-router.get('/consultaporcorreo/:correo', consultaPorCorreo);
-router.post('/', agregarUsuarios);       
-router.put('/', actualizarUsuarios); 
-router.delete('/:id', eliminarUsuarios); 
+// Rutas públicas
 router.post('/login', loginUsuarios);
+
+// Rutas protegidas
+router.get('/consultaporcorreo/:correo', verificarJWT, consultaPorCorreo);
+router.get('/', verificarJWT, verificarRol('administrador'), todosUsuarios);
+router.get('/:id', verificarJWT, unoUsuarios);
+router.post('/', verificarJWT, verificarRol('administrador'), agregarUsuarios);
+router.put('/', verificarJWT, actualizarUsuarios);
+router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarUsuarios);
 
 // Middleware de validación (ejemplo básico)
 const validarUsuarios = (req, res, next) => {
@@ -103,21 +108,44 @@ async function loginUsuarios(req, res, next) {
         // 1. Capturamos el resultado del controlador (que ahora debería traer el objeto del usuario)
         const datosUsuario = await controlador.loginUsuarios(req.body);
         
-        if (datosUsuario) {
-            // 2. Enviamos el mensaje de éxito JUNTO con la información necesaria
+        if (datosUsuario && datosUsuario.usuario) {
+            const usuario = datosUsuario.usuario;
+            const token = datosUsuario.token;
+
+            // Configurar cookie HttpOnly con el token
+            const cookieOptions = {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production' ? true : false, // true en producción (HTTPS)
+                sameSite: 'lax', // protege contra CSRF en la mayoría de flujos de login
+                maxAge: 8 * 60 * 60 * 1000 // 8 horas en ms
+            };
+
+            // Seteamos la cookie; el front debe usar fetch/axios con `credentials: 'include'`
+            res.cookie('token', token, cookieOptions);
+
             respuesta.success(req, res, {
                 mensaje: 'Login Exitoso',
                 user: {
-                    id: datosUsuario.idUsuarios,
-                    nombre: datosUsuario.nombre,
-                    correo: datosUsuario.correo,
-                    rol: datosUsuario.rol // <-- Aquí viaja el nuevo campo
+                    id: usuario.idUsuarios,
+                    nombre: usuario.nombreUsuario || usuario.nombre || null,
+                    correo: usuario.correo,
+                    rol: usuario.rol
+                }
+            }, 200);
+        } else if (datosUsuario && datosUsuario.idUsuarios) {
+            // compatibilidad: controlador antiguo que devolvía usuario directamente
+            const u = datosUsuario;
+            respuesta.success(req, res, {
+                mensaje: 'Login Exitoso',
+                user: {
+                    id: u.idUsuarios,
+                    nombre: u.nombreUsuario || u.nombre || null,
+                    correo: u.correo,
+                    rol: u.rol
                 }
             }, 200);
         } else {
-            res.status(401).json({
-                mensaje: 'Login Fallido'
-            });
+            respuesta.error(req, res, 'Login Fallido', 401);
         }
         
     } catch(err) {

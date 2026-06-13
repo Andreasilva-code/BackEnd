@@ -15,4 +15,9 @@ module.exports = {
         port: process.env.MYSQL_PORT || 3306
 
       },
+      jwt: {
+        secret: process.env.JWT_SECRET || 'jwt_secreto_de_desarrollo',
+        expiresIn: process.env.JWT_EXPIRES || '8h'
+      }
+
 }

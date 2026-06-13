@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors'); // 1. Importar el paquete
+const cookieParser = require('cookie-parser');
 const config = require('./config');
 // En app.js
 const path = require('path');
@@ -27,15 +28,18 @@ const app = express();
 
 // 2. Configurar CORS (Debe ir ANTES de las rutas)
 app.use(cors({
-    //origin: 'http://localhost:3000', // El puerto donde corre tu Next.js
-    origin: '*', // El puerto donde corre tu Next.js
+    // En desarrollo, ajusta FRONTEND_URL en tu .env (ej: http://localhost:3000)
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true // Permitir cookies y credenciales
 }));
 
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Cookie parser: permite leer cookies desde `req.cookies`
+app.use(cookieParser());
 
 
 // Configuración  
