@@ -1,100 +1,114 @@
 const TABLA = 'usuarios';
-
+const bcrypt = require('bcryptjs');
 
 module.exports = function (dbInyectada) {
 
-let db = dbInyectada;
-if(!db){
-    db = require('../../DB/mysql');
-}
-function todosUsuarios () {
-    return db.todosUsuarios(TABLA,)
-}
+    let db = dbInyectada;
+    if(!db){
+        db = require('../../DB/mysql');
+    }
 
-function unoUsuarios (id) {
-    return db.unoUsuarios(TABLA, id,)
-}
+    function todosUsuarios () {
+        return db.todosUsuarios(TABLA,)
+    }
 
-function consultarCorreo (correo) {
-    return db.consultarCorreo(TABLA, correo,)
-}
+    function unoUsuarios (id) {
+        return db.unoUsuarios(TABLA, id,)
+    }
 
-function consultaPorCorreo (correo) {
-    return db.consultaPorCorreo(TABLA, correo,)
-}
+    function consultarCorreo (correo) {
+        return db.consultarCorreo(TABLA, correo,)
+    }
+
+    function consultaPorCorreo (correo) {
+        return db.consultaPorCorreo(TABLA, correo,)
+    }
 
 
-async function agregarUsuarios (body) {
+    async function agregarUsuarios (body) {
+       // Hashear la contraseña antes de guardar
+       const salt = await bcrypt.genSalt(10);
+       const hash = await bcrypt.hash(body.clave, salt);
 
-   const usuarios = {
-    idUsuarios: body.idUsuarios,
-    nombreUsuario: body.nombreUsuario,
-    clave: body.clave,
-    fechaCreacion: body.fechaCreacion,
-    correo: body.correo,
-    Arrendatario_idArrendatario: body.Arrendatario_idArrendatario,
-    Funcionarios_idFuncionario: body.Funcionarios_idFuncionario,
-    Propietario_idPropietario: body.Propietario_idPropietario
-   
-   }
-    const respuesta = db.agregarUsuarios(TABLA, usuarios);
+       const usuarios = {
+        idUsuarios: body.idUsuarios,
+        nombreUsuario: body.nombreUsuario,
+        clave: hash,
+        fechaCreacion: body.fechaCreacion,
+        correo: body.correo,
+        Arrendatario_idArrendatario: body.Arrendatario_idArrendatario,
+        Funcionarios_idFuncionario: body.Funcionarios_idFuncionario,
+        Propietario_idPropietario: body.Propietario_idPropietario
+       }
 
-    return true;
+        const respuesta = await db.agregarUsuarios(TABLA, usuarios);
 
-}
+        return respuesta;
+    }
 
-function eliminarUsuarios (id) {
-    return db.eliminarUsuarios(TABLA, id,)
-}
+    function eliminarUsuarios (id) {
+        return db.eliminarUsuarios(TABLA, id,)
+    }
 
-function actualizarUsuarios(body) {
-    // Aquí podrías validar que el 'body' contenga todos los campos requeridos
-    
-    // Asume que 'body' contiene todos los campos para el reemplazo completo
-    return db.actualizarUsuarios(TABLA, body);
-}
+    function actualizarUsuarios(body) {
+        return db.actualizarUsuarios(TABLA, body);
+    }
 
-async function loginUsuarios(body) {
-    try {
-        // 1. Buscamos al usuario por correo
-        const respuesta = await db.consultarCorreo(TABLA, body.correo);
-        
-        // 2. Si no hay resultados, el correo no existe
-        if (!respuesta || respuesta.length === 0) {
-            console.log('Correo no encontrado');
-            return null; // Retornamos null en lugar de false
-        }
-        
-        const usuario = respuesta[0];
-        
-        // 3. Comparamos la clave
-        if (usuario.clave === body.clave) {
-            console.log('Credenciales válidas para:', usuario.nombre);
-          
-            // Agregamos .trim() para ignorar espacios accidentales
-if (usuario.clave.toString().trim() === body.clave.toString().trim()) {
-    console.log('Autenticación satisfactoria');
-    return usuario; 
-}
-        } else {
+    async function loginUsuarios(body) {
+        try {
+            // 1. Buscamos al usuario por correo
+            const respuesta = await db.consultarCorreo(TABLA, body.correo);
+            
+            // 2. Si no hay resultados, el correo no existe
+            if (!respuesta || respuesta.length === 0) {
+                console.log('Correo no encontrado');
+                return null;
+            }
+
+            const usuario = respuesta[0];
+
+            // 3. Intentamos comparar con bcrypt (hash)
+            const coincide = await bcrypt.compare(body.clave, usuario.clave);
+
+            if (coincide) {
+                // Autenticación correcta
+                // opcional: eliminar clave antes de retornar
+                delete usuario.clave;
+                return usuario;
+            }
+
+            // 4. Compatibilidad: si la contraseña en la BD está en texto plano,
+            // permitimos el login y actualizamos a hash para migrar usuarios antiguos.
+            if (usuario.clave === body.clave) {
+                try {
+                    const nuevoHash = await bcrypt.hash(body.clave, 10);
+                    await db.actualizarUsuarios(TABLA, { idUsuarios: usuario.idUsuarios, clave: nuevoHash });
+                    usuario.clave = nuevoHash;
+                    delete usuario.clave;
+                    return usuario;
+                } catch (e) {
+                    console.error('Error al re-hashear contraseña antigua:', e);
+                    return null;
+                }
+            }
+
             console.log('Clave incorrecta');
             return null;
+        } catch (error) {
+            console.error('Error en login:', error);
+            throw error;
         }
-    } catch (error) {
-        console.error('Error en login:', error);
-        throw error; // Es mejor lanzar el error para que lo atrape el 'next(err)' de la ruta
     }
-}
 
-return{ 
-    todosUsuarios,
-    unoUsuarios,
-    agregarUsuarios,
-    eliminarUsuarios,
-    actualizarUsuarios,
-    loginUsuarios,
-    consultaPorCorreo,
-}
+    return{ 
+        todosUsuarios,
+        unoUsuarios,
+        agregarUsuarios,
+        eliminarUsuarios,
+        actualizarUsuarios,
+        loginUsuarios,
+        consultaPorCorreo,
+    }
 }
 
     
