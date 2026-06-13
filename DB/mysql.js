@@ -535,6 +535,18 @@ function actualizarEstadoPqrs(tabla, datos) {
         });
     });
 }
+// 🌟 NUEVA FUNCIÓN DE FILTRADO:
+function pqrsPorPropietario(tabla, identificacion) {
+    return new Promise((resolve, reject) => {
+        // Ajusta 'cedula_propietario' al nombre real de tu columna en la BD
+        const sql = `SELECT * FROM ${tabla} WHERE cedula_propietario = ?`;
+        
+        conexion.query(sql, [identificacion], (error, result) => {
+            return error ? reject(error) : resolve(result);
+        });
+    });
+}
+
 module.exports = {
     todos,
     uno,
@@ -574,6 +586,7 @@ module.exports = {
     agregarPqrs,
     eliminarPqrs,
     actualizarEstadoPqrs,
+    pqrsPorPropietario,
     consultarExistenteParqueaderoVisitante,
     consultarRegistroPorFiltroParqueaderoVisitante,
     todosValoresParqueaderoVisitantes,

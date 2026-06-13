@@ -21,6 +21,7 @@ router.get('/', todosPqrs);
 router.post('/', cargarEvidencia, agregarPqrs);
 router.put('/', actualizarEstadoPqrs);
 router.delete('/:id', eliminarPqrs);
+router.get('/propietario/:identificacion', consultarPqrsPropietario);
 
 async function todosPqrs(req, res, next) {
     try {
@@ -74,6 +75,27 @@ async function actualizarEstadoPqrs(req, res, next) {
     }
 }
 
+async function consultarPqrsPropietario(req, res, next) {
+    try {
+        const identificacion = req.params.identificacion;
+        
+        // Llamamos al controlador pasándole el parámetro de filtrado
+        const items = await controlador.pqrsPorPropietario(identificacion);
+        const host = `${req.protocol}://${req.get('host')}`;
+
+        // Mapeamos las evidencias exactamente igual que en tu función todosPqrs
+        const itemsConAdjuntos = items.map(item => {
+            return {
+                ...item,
+                evidenciaUrl: item.evidencia ? `${host}/modulos/pqrs/uploads/${item.evidencia}` : null
+            };
+        });
+
+        respuesta.success(req, res, itemsConAdjuntos, 200);
+    } catch (err) {
+        next(err);
+    }
+}
 async function eliminarPqrs(req, res, next) {
     try {
       await controlador.eliminarPqrs(req.params.id);

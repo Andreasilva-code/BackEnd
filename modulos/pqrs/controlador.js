@@ -26,6 +26,10 @@ function eliminarPqrs(id) {
 async function actualizarEstadoPqrs(body) {
       return db.actualizarEstadoPqrs(TABLA, body); 
 }
+// 🌟 NUEVA FUNCIÓN:
+function pqrsPorPropietario(identificacion) {
+    return db.pqrsPorPropietario(TABLA, identificacion);
+}
 
 return{ 
     todosPqrs,
@@ -33,6 +37,7 @@ return{
     agregarPqrs,
     eliminarPqrs,
     actualizarEstadoPqrs,
+    pqrsPorPropietario,
 }
 }
 
