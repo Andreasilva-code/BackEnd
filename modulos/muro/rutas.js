@@ -5,7 +5,7 @@ const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware'
 const router = express.Router();
 
 // Listar historias: permitido para todos los roles autenticados
-router.get('/', verificarJWT, verificarRol('administrador', 'vigilante', 'propietario', 'arrendatario'), listarHistorias);
+router.get('/', listarHistorias);
 // Crear historia: cualquier usuario autenticado
 router.post('/', verificarJWT, agregarHistoria);
 
