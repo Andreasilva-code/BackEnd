@@ -485,13 +485,22 @@ function todosValoresParqueaderoVisitantes(tabla){
 
 /* QUERYS Pqrs*/
 
- function  todosPqrs (tabla){
-    return new Promise( (resolve, reject) => {
-        conexion.query(`SELECT * FROM ${tabla}`, (error, result) => {
+function todosPqrs(tabla) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT 
+                p.*,
+                prop.Apartamento_idApartamento AS numeroApartamento
+            FROM ${tabla} p
+            INNER JOIN usuarios u ON p.idUsuario = u.idUsuarios
+            LEFT JOIN propietario prop ON u.idUsuarios = prop.cedula
+        `;
+        
+        conexion.query(sql, (error, result) => {
             return error ? reject(error) : resolve(result);
-        })
+        });
     });
- }
+}
 
 function unoPqrs (tabla, id){
     return new Promise( (resolve, reject) => {
@@ -526,6 +535,11 @@ function actualizarEstadoPqrs(tabla, datos) {
             sql += `, respuestaPqrs = ?`;
             params.push(datos.respuestaPqrs);
         }
+
+        if (datos.fechaRespuesta !== undefined) {
+            sql += `, fechaRespuesta = ?`;
+            params.push(datos.fechaRespuesta);
+        }
         
         sql += ` WHERE idpqrs = ?`;
         params.push(datos.idpqrs);
@@ -535,11 +549,19 @@ function actualizarEstadoPqrs(tabla, datos) {
         });
     });
 }
+
 // 🌟 NUEVA FUNCIÓN DE FILTRADO:
 function pqrsPorPropietario(tabla, identificacion) {
     return new Promise((resolve, reject) => {
-        // Ajusta 'cedula_propietario' al nombre real de tu columna en la BD
-        const sql = `SELECT * FROM ${tabla} WHERE cedula_propietario = ?`;
+        const sql = `
+            SELECT 
+                p.*,
+                prop.Apartamento_idApartamento AS numeroApartamento
+            FROM ${tabla} p
+            INNER JOIN usuarios u ON p.idUsuario = u.idUsuarios
+            LEFT JOIN propietario prop ON u.idUsuarios = prop.cedula
+            WHERE p.idUsuario = ?
+        `;
         
         conexion.query(sql, [identificacion], (error, result) => {
             return error ? reject(error) : resolve(result);

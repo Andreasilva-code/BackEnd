@@ -58,6 +58,8 @@ app.use('/api/solicitudsalonessociales', solicitudsalonessociales);
 app.use('/api/parqueaderovisitante', parqueaderovisitante);
 app.use('/api/pqrs', pqrs);
 app.use('/api/valoresparqueaderovisitantes', valoresparqueaderovisitantes);
+
+
 // Middleware de errores (Siempre al final)
 app.use(error);
 

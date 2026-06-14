@@ -37,6 +37,8 @@ async function todosPqrs(req, res, next) {
         const itemsConAdjuntos = items.map(item => {
             return {
                 ...item,
+                // 🌟 ASEGURAMOS QUE SE INCLUYA EN EL JSON:
+                numeroApartamento: item.numeroApartamento || null,
                 evidenciaUrl: item.evidencia ? `${host}/modulos/pqrs/uploads/${item.evidencia}` : null
             };
         });
@@ -69,9 +71,9 @@ async function agregarPqrs(req, res, next) {
 }
 
 async function actualizarEstadoPqrs(req, res, next) {
-    try {const estadosPermitidos = ['Pendiente', 'En Proceso', 'Resuelto'];
+    try {const estadosPermitidos = ['Pendiente', 'Resuelto'];
         if (!estadosPermitidos.includes(req.body.estado)) {
-            return respuesta.error(req, res, "Estado no válido. Debe ser 'Pendiente', 'En Proceso' o 'Resuelto'", 400);
+            return respuesta.error(req, res, "Estado no válido. Debe ser 'Pendiente' o 'Resuelto'", 400);
         }
 
         await controlador.actualizarEstadoPqrs(req.body);
@@ -89,10 +91,20 @@ async function consultarPqrsPropietario(req, res, next) {
         const items = await controlador.pqrsPorPropietario(identificacion);
         const host = `${req.protocol}://${req.get('host')}`;
 
-        // Mapeamos las evidencias exactamente igual que en tu función todosPqrs
+        // Mapeamos asegurando traer TODOS los campos crudos (incluyendo numeroApartamento)
         const itemsConAdjuntos = items.map(item => {
             return {
-                ...item,
+                idPqrs: item.idPqrs,
+                fechaCreacion: item.fechaCreacion,
+                idUsuario: item.idUsuario,
+                tipo: item.tipo,
+                descripcion: item.descripcion,
+                evidencia: item.evidencia,
+                estado: item.estado,
+                respuestaPqrs: item.respuestaPqrs,
+                fechaRespuesta: item.fechaRespuesta || null,
+                // 🌟 FORZAMOS LA INCLUSIÓN AQUÍ:
+                numeroApartamento: item.numeroApartamento || null, 
                 evidenciaUrl: item.evidencia ? `${host}/modulos/pqrs/uploads/${item.evidencia}` : null
             };
         });
@@ -102,6 +114,8 @@ async function consultarPqrsPropietario(req, res, next) {
         next(err);
     }
 }
+
+
 async function eliminarPqrs(req, res, next) {
     try {
       await controlador.eliminarPqrs(req.params.id);
