@@ -328,6 +328,7 @@ function unoParqueadero(tabla, id){
         })
     });
 }
+
  function agregarParqueadero(tabla, data){
     return new Promise( (resolve, reject) => {
         conexion.query(`INSERT INTO ${tabla} SET ?`, data, (error, result) => {
@@ -344,17 +345,43 @@ function unoParqueadero(tabla, id){
         })
     });
 }
-
+function actualizarSolicitudParqueadero(tabla, data) {
+    return new Promise((resolve, reject) => {
+        // Actualizamos estado, observaciones, fechaRespuesta y guardamos el ID del administrador que gestiona
+        const query = `
+            UPDATE ${tabla} 
+            SET estado = ?, observaciones = ?, fechaRespuesta = ?
+            WHERE idSolicitudParqueadero = ?
+        `;
+        
+        conexion.query(
+            query, 
+            [data.estado, data.observaciones, data.fechaRespuesta, data.id], 
+            (error, result) => {
+                return error ? reject(error) : resolve(result);
+            }
+        );
+    });
+}
 
 /* QUERYS Trasteos*/
 
-  function  todosSolicitudTrasteos(tabla){
-    return new Promise( (resolve, reject) => {
-        conexion.query(`SELECT * FROM ${tabla}`, (error, result) => {
+function todosSolicitudTrasteos(tabla) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT 
+                t.*,
+                COALESCE(prop.Apartamento_idApartamento, arr.Apartamento_idApartamento) AS numeroApartamento
+            FROM ${tabla} t
+            LEFT JOIN propietario prop ON t.idPropietario = prop.cedula
+            LEFT JOIN arrendatario arr ON t.idArrendatario = arr.cedula
+        `;
+        
+        conexion.query(sql, (error, result) => {
             return error ? reject(error) : resolve(result);
-        })
+        });
     });
- }
+}
 
  function agregarSolicitudTrasteos(tabla, data){
     return new Promise( (resolve, reject) => {
@@ -363,6 +390,26 @@ function unoParqueadero(tabla, id){
         })
     });
  }
+
+ function actualizarSolicitudTrasteo(tabla, data) {
+    return new Promise((resolve, reject) => {
+        // Actualizamos estado, Observaciones y fijamos la fechaRespuesta con la hora del servidor
+        const query = `
+            UPDATE ${tabla} 
+            SET estado = ?, 
+            observaciones = ?, fechaRespuesta = NOW() 
+            WHERE idSolicitudTrasteos = ?
+        `;
+        
+        conexion.query(
+            query, 
+            [data.estado, data.observaciones, data.id], 
+            (error, result) => {
+                return error ? reject(error) : resolve(result);
+            }
+        );
+    });
+}
 
  /* QUERYS Salones Sociales*/
 
@@ -381,6 +428,28 @@ function todosSolicitudSalonesSociales(tabla){
         })
     });
  }
+
+ /* QUERYS Salones Sociales - Actualización */
+
+function actualizarSolicitudSalonesSociales(tabla, data) {
+    return new Promise((resolve, reject) => {
+        const query = `
+            UPDATE ${tabla} 
+            SET estado = ?, 
+                observaciones = ?, 
+                fechaRespuesta = NOW() 
+            WHERE idsolicitudsalonessociales = ?
+        `;
+        
+        conexion.query(
+            query, 
+            [data.estado, data.observaciones, data.id], 
+            (error, result) => {
+                return error ? reject(error) : resolve(result);
+            }
+        );
+    });
+}
 
 /* QUERYS Parqueadero Visitante */
 
@@ -614,4 +683,7 @@ module.exports = {
     todosValoresParqueaderoVisitantes,
     obtenerarqueo,
     obtenerArqueo,
+    actualizarSolicitudParqueadero,
+    actualizarSolicitudTrasteo,
+    actualizarSolicitudSalonesSociales,
 }

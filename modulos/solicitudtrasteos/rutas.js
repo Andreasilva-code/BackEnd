@@ -8,8 +8,8 @@ const router = express.Router();
 router.get('/', verificarJWT, verificarRol('administrador'), todosSolicitudTrasteos);
 // Crear solicitud: admin, propietario y arrendatario
 router.post('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), agregarSolicitudTrasteos);
-//router.delete('/:id', eliminar);
-//router.put('/', actualizarArrendatario);
+// Ruta exclusiva para que el Administrador gestione y responda los trasteos
+router.put('/gestionar', verificarJWT, verificarRol('administrador'), gestionarSolicitudTrasteo);
 
 async function todosSolicitudTrasteos (req, res, next) {
     try{
@@ -41,32 +41,38 @@ async function todosSolicitudTrasteos (req, res, next) {
     }
 };
 
- /* async function eliminar (req, res, next) {
-    try{ 
-        
-            const items = await controlador.eliminar(req.params.id);
-            respuesta.success(req, res, 'arrendatario eliminado satisfactoriamente', 200);
-            //console.log("exitoso")
-
-           respuesta.error(req, res, 'No se encontro el idCedulaArrendatario', 206);
-
-    }catch(err){
-        //console.log("error")
-        next(err);
-    }
-};
-
-async function actualizarArrendatario(req, res, next) {
+ async function gestionarSolicitudTrasteo(req, res, next) {
     try {
-        // La validación de los datos completos podría hacerse aquí
-        const items = await controlador.actualizarArrendatario(req.body);
-        const mensaje = 'arrendatario actualizado con exito';
+        // Quitamos fechaRespuesta de aquí porque la genera la Base de Datos con NOW()
+        const { id, estado, observaciones } = req.body;
 
-        respuesta.success(req, res, mensaje, 200);
+        // 1. Validación de campos requeridos por el sistema
+        if (!id || !estado || !observaciones) {
+            return respuesta.error(req, res, "Los campos 'id', 'estado' y 'observaciones' son obligatorios para responder.", 400);
+        }
+
+        // 2. Control de flujo de estados admitidos para el trasteo (Criterio de Auditoría)
+        const estadosPermitidos = ['Pendiente', 'Aprobado', 'Rechazado'];
+        if (!estadosPermitidos.includes(estado)) {
+            return respuesta.error(req, res, "Estado inválido. Debe ser 'Aprobado' o 'Rechazado'.", 400);
+        }
+
+        // 3. Empaquetado de datos limpios (Corregida la coma faltante)
+        const datosGestion = {
+            id: id,
+            estado: estado,
+            observaciones: observaciones // <--- Coma corregida
+        };
+
+        // 4. Ejecución en el controlador
+        await controlador.actualizarSolicitudTrasteo(datosGestion);
+
+        respuesta.success(req, res, 'La solicitud de mudanza ha sido gestionada y actualizada con éxito.', 200);
+
     } catch (err) {
+        console.error("Error en gestionarSolicitudTrasteo:", err);
         next(err);
     }
-};
+}
 
-*/
 module.exports = router;

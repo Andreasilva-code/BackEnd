@@ -31,13 +31,14 @@ const cargarDocumentos = upload.fields([
 router.post('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), cargarDocumentos, agregarParqueadero);
 
 // Listar: solo admin
-router.get('/', verificarJWT, verificarRol('administrador'), todosParqueadero);
+router.get('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), todosParqueadero);
 // Ver uno: solo admin
 router.get('/:id', verificarJWT, verificarRol('administrador'), unoParqueadero);
 // Eliminar: solo admin
 router.delete('/:id', verificarJWT, verificarRol('administrador'), eliminarParqueadero);
 // Actualizar: solo admin
 router.put('/', verificarJWT, verificarRol('administrador'), actualizarParqueadero);
+router.put('/gestionar', verificarJWT, verificarRol('administrador'), gestionarSolicitudParqueadero);
 
 
 async function todosParqueadero(req, res, next) {
@@ -151,5 +152,37 @@ async function actualizarParqueadero(req, res, next) {
         next(err);
     }
 };
+async function gestionarSolicitudParqueadero(req, res, next) {
+    try {
+        const { id, estado, observaciones, fechaRespuesta } = req.body;
 
+        // 1. Validación de campos requeridos
+        if (!id || !estado || !observaciones || !fechaRespuesta) {
+            return respuesta.error(req, res, "Los campos 'id', 'estado', 'observaciones' y 'fechaRespuesta' son completamente obligatorios.", 400);
+        }
+
+        // 2. Control de flujo de estados admitidos para auditoría
+        const estadosPermitidos = ['Pendiente', 'Aprobado', 'Rechazado'];
+        if (!estadosPermitidos.includes(estado)) {
+            return respuesta.error(req, res, "Estado inválido. Debe ser 'Pendiente', 'Aprobado' o 'Rechazado'.", 400);
+        }
+
+        // 3. Estructuración de datos inyectando la sesión del administrador
+        const datosGestion = {
+            id: id,
+            estado: estado,
+            observaciones: observaciones,
+            fechaRespuesta: fechaRespuesta
+        };
+
+        // 4. Ejecución del proceso en base de datos
+        await controlador.actualizarSolicitudParqueadero(datosGestion);
+
+        respuesta.success(req, res, 'La solicitud de parqueadero fue actualizada y respondida con éxito.', 200);
+
+    } catch (err) {
+        console.error("Error al gestionar solicitud de parqueadero:", err);
+        next(err);
+    }
+}
 module.exports = router;

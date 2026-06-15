@@ -21,24 +21,16 @@ function agregarSolicitudTrasteos (body) {
     return db.agregarSolicitudTrasteos(TABLA, body,)
 }
 
-/*
-function eliminar (id) {
-    return db.eliminar(TABLA, id,)
-}
 
-function actualizarArrendatario(body) {
-    // Aquí podrías validar que el 'body' contenga todos los campos requeridos
-    
-    // Asume que 'body' contiene todos los campos para el reemplazo completo
-    return db.actualizarArrendatario(TABLA, body);
-}
-*/
+// 🌟 NUEVA FUNCIÓN PARA EL ROL ADMINISTRADOR:
+    function actualizarSolicitudTrasteo(body) {
+        return db.actualizarSolicitudTrasteo(TABLA, body);
+    }
+
 return{ 
     todosSolicitudTrasteos,
-    //uno,
     agregarSolicitudTrasteos,
-    //eliminar,
-    //actualizarArrendatario
+    actualizarSolicitudTrasteo,
 }
 }
 

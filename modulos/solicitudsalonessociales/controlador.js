@@ -21,25 +21,15 @@ function agregarSolicitudSalonesSociales (body) {
     return db.agregarSolicitudSalonesSociales(TABLA, body,)
 }
 
-/*
-function eliminar (id) {
-    return db.eliminar(TABLA, id,)
+function actualizarSolicitudSalonesSociales(body) {
+    return db.actualizarSolicitudSalonesSociales(TABLA, body)
 }
 
-function actualizarArrendatario(body) {
-    // Aquí podrías validar que el 'body' contenga todos los campos requeridos
-    
-    // Asume que 'body' contiene todos los campos para el reemplazo completo
-    return db.actualizarArrendatario(TABLA, body);
-}
-*/
 return{ 
     todosSolicitudSalonesSociales,
-    //uno,
     agregarSolicitudSalonesSociales,
-    //eliminar,
-    //actualizarArrendatario
-}
+    actualizarSolicitudSalonesSociales,
+    }
 }
 
     

@@ -30,12 +30,18 @@ function actualizarParqueadero(body) {
     return db.actualizarParqueadero(TABLA, body);
 }
 
+// 🌟 NUEVA FUNCIÓN PARA EL ROL ADMINISTRADOR:
+    function actualizarSolicitudParqueadero(body) {
+        return db.actualizarSolicitudParqueadero(TABLA, body);
+    }
+
 return{ 
     todosParqueadero,
     unoParqueadero,
     agregarParqueadero,
     eliminarParqueadero,
-    actualizarParqueadero
+    actualizarParqueadero,
+    actualizarSolicitudParqueadero
 }
 }
 
