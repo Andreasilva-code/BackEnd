@@ -28,8 +28,19 @@ const app = express();
 
 // 2. Configurar CORS (Debe ir ANTES de las rutas)
 app.use(cors({
-    // En desarrollo, ajusta FRONTEND_URL en tu .env (ej: http://localhost:3000)
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origen (como postman, curl o llamadas internas)
+        if (!origin) return callback(null, true);
+        
+        const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+        const isLocalIP = /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin);
+        
+        if (isLocalhost || isLocalIP || origin === process.env.FRONTEND_URL) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true // Permitir cookies y credenciales
@@ -58,6 +69,7 @@ app.use('/api/solicitudsalonessociales', solicitudsalonessociales);
 app.use('/api/parqueaderovisitante', parqueaderovisitante);
 app.use('/api/pqrs', pqrs);
 app.use('/api/valoresparqueaderovisitantes', valoresparqueaderovisitantes);
+// Agrega esta línea para mapear la ruta de la carpeta física de uploads a una URL pública
 
 
 // Middleware de errores (Siempre al final)

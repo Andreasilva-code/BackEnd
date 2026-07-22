@@ -1,5 +1,5 @@
  const mysql = require('mysql2');
- const config = require('../config');
+const config = require('../config');
 
 const bdconfig = {
     host: config.mysql.host,
@@ -7,30 +7,34 @@ const bdconfig = {
     password: config.mysql.password,
     database: config.mysql.database,
     port: config.mysql.port || 3306,
+    charset: 'utf8mb4',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+};
+
+// Cambiamos a un 'Pool' para evitar desconexiones y timeouts de paquetes
+let conexion = mysql.createPool(bdconfig);
+
+function conMysql() {
+    conexion.getConnection((err, connection) => {
+        if (err) {
+            console.log('[db err]', err.message);
+            if (process.env.NODE_ENV === 'test' || typeof global.it === 'function') {
+                return; 
+            }
+            setTimeout(conMysql, 2000);
+        } else {
+            // SI ESTAMOS EN ENTORNO DE JEST/TESTS, SILENCIAMOS EL LOG PARA EVITAR EL AVISO
+            if (process.env.NODE_ENV !== 'test' && typeof global.it !== 'function') {
+                console.log('DB Conectada con Pool exitosamente!!!');
+            }
+            connection.release(); // Libera la conexión de prueba siempre
+        }
+    });
 }
 
-let conexion;
-
-function conMysql(){
-    conexion = mysql.createConnection(bdconfig);
-    conexion.connect ((err) => {
-        if(err){
-          console.log('[db err]', err);
-          setTimeout(conMysql, 200);
-        }else{
-            console.log('DB Conectada!!!')
-        }
-    })   
-    conexion.on('err', err =>{
-        console.log('[db err]', err)
-        if(err.code === 'PROTOCOL_CONNECTION_LOST'){
-            conMysql();
-        }else{
-            throw err;
-        }
-    })
-}
-
+// Inicializamos la verificación
 conMysql();
 
 /* QUERYS ARRENDATARIO*/
@@ -43,7 +47,7 @@ conMysql();
     });
  }
 
-   function  todosUsuarios(tabla){
+   function  todosArrendatario(tabla){
     return new Promise( (resolve, reject) => {
         conexion.query(`SELECT * FROM ${tabla}`, (error, result) => {
             return error ? reject(error) : resolve(result);
@@ -65,13 +69,7 @@ function uno(tabla, id){
         })
     });
 }
- function actualizarArrendatario(tabla, data){
-    return new Promise( (resolve, reject) => {
-        conexion.query(`UPDATE ${tabla} SET ? WHERE idArrendatario= ?`, [data, data.idArrendatario],  (error, result) => {
-            return error ? reject(error) : resolve(result);
-        })
-    });
-}
+
  function agregar(tabla, data){
     //desicion para insertar si es igual a 1
     /*
@@ -118,6 +116,7 @@ function actualizarArrendatario(tabla, data) {
         });
     });   
 }
+
 /* QUERYS USUARIO*/
 
 function  todosUsuarios(tabla){
@@ -154,8 +153,11 @@ module.exports = {
 
 function consultarCorreo(tabla, correo) {
     return new Promise((resolve, reject) => {
-        // Cambiamos 'correo, clave' por '*' para traer todos los campos (incluyendo el nuevo campo ROL)
-        // El ?? es para nombres de tablas y el ? para valores de texto
+        // SI POR ALGÚN MOTIVO LA CONEXIÓN NO SE HA INICIALIZADO, LA FORZAMOS AQUÍ
+        if (!conexion) {
+            conMysql();
+        }
+
         const sql = `SELECT * FROM ?? WHERE correo = ?`;
         
         conexion.query(sql, [tabla, correo], (error, results) => {
