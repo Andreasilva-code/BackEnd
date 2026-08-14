@@ -4,8 +4,8 @@ const controlador = require('./index.js');
 const { verificarJWT, verificarRol } = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-// Listar solicitudes: solo admin
-router.get('/', verificarJWT, verificarRol('administrador'), todosSolicitudTrasteos);
+// Listar solicitudes: admin, propietario y arrendatario
+router.get('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), todosSolicitudTrasteos);
 // Crear solicitud: admin, propietario y arrendatario
 router.post('/', verificarJWT, verificarRol('administrador', 'propietario', 'arrendatario'), agregarSolicitudTrasteos);
 // Ruta exclusiva para que el Administrador gestione y responda los trasteos

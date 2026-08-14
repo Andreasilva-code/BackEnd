@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.*
+
+# Cobertura de pruebas
+coverage/
+
+# Resultados de Playwright
+test-results/
+playwright-report/
+
+# Archivos temporales
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Sonar
+.scannerwork/
+
+# Archivos subidos por usuarios
+modulos/*/uploads/

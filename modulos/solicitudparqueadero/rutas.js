@@ -110,12 +110,18 @@ async function agregarParqueadero(req, res, next) {
             fechaSolicitud: fechaLimpia,
             soat: archivos['soat'] ? archivos['soat'][0].filename : null,
             tecnoMecanica: archivos['tecnoMecanica'] ? archivos['tecnoMecanica'][0].filename : null,
-            tarjetaPropiedad: archivos['tarjetaPropiedad'] ? archivos['tarjetaPropiedad'][0].filename : null
+            tarjetaPropiedad: archivos['tarjetaPropiedad'] ? archivos['tarjetaPropiedad'][0].filename : null,
+            estado: 'pendiente' // Nueva solicitud siempre comienza como pendiente
         };
 
-        // ... resto de tu código (validación de archivos y llamado al controlador)
-        if (!datosSolicitud.soat || !datosSolicitud.tecnoMecanica || !datosSolicitud.tarjetaPropiedad) {
-             return respuesta.error(req, res, 'Faltan documentos obligatorios', 400);
+        // Remover el campo 'aprobado' ya que usamos 'estado' en su lugar
+        delete datosSolicitud.aprobado;
+
+        // Validación de documentos obligatorios (solo para Carro/Moto)
+        if (datosSolicitud.tipoParqueadero !== 'Bicicleta') {
+            if (!datosSolicitud.soat || !datosSolicitud.tecnoMecanica || !datosSolicitud.tarjetaPropiedad) {
+                 return respuesta.error(req, res, 'Faltan documentos obligatorios (SOAT, Tecnomecánica y Tarjeta de Propiedad son requeridos)', 400);
+            }
         }
 
         const items = await controlador.agregarParqueadero(datosSolicitud);
