@@ -19,7 +19,7 @@
   "test": "jest tests/integration --detectOpenHandles",
   "test:unit": "jest tests/unit",
   "test:integration": "jest tests/integration --detectOpenHandles",
-  "test:functional": "playwright test tests/functional"
+  "test:functional": "node tests/functional/load-env.js"
  },
  "dependencies": {
   "bcryptjs": "^2.4.3",

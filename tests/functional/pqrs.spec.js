@@ -1,67 +1,194 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('--- PRUEBAS FUNCIONALES (Módulo PQRS - UI) ---', () => {
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD;
 
-    test('El administrador debería poder ver la lista de PQRS en el navegador', async ({ page }) => {
-        // 1. Abre el navegador en el módulo de PQRS
-        await page.goto('http://localhost:3000/admin/pqrs', { waitUntil: 'networkidle' });
+test.describe('PRUEBAS FUNCIONALES - Módulo PQRS - UI', () => {
 
-        // 2. Espera a que la tabla o lista de PQRS cargue
-        await page.waitForSelector('table, [data-testid="pqrs-list"]', { timeout: 5000 }).catch(() => {
-            console.log('Elemento de lista de PQRS no encontrado. Verifica que el Frontend esté corriendo en puerto 3000');
+    test.beforeEach(async ({ page }) => {
+
+        if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+            throw new Error(
+                'Faltan TEST_ADMIN_EMAIL y TEST_ADMIN_PASSWORD'
+            );
+        }
+
+        // 1. Abrir login
+        await page.goto('http://localhost:3000/login', {
+            waitUntil: 'networkidle'
         });
 
-        // 3. Valida que la lista sea visible
-        const pqrsItems = page.locator('tbody tr, [data-testid="pqrs-item"]');
+        // 2. Verificar login
+        await expect(
+            page.getByText('Iniciar Sesión', { exact: false })
+        ).toBeVisible({ timeout: 10000 });
+
+        console.log('Intentando iniciar sesión con:', ADMIN_EMAIL);
+
+        // 3. Llenar correo
+        await page.getByLabel('Correo Electrónico').fill(ADMIN_EMAIL);
+
+        // 4. Llenar contraseña
+        await page.getByLabel('Contraseña').fill(ADMIN_PASSWORD);
+
+        // 5. Escuchar las peticiones para diagnóstico
+        page.on('request', request => {
+            if (
+                request.method() === 'POST' &&
+                request.url().includes('/usuarios/login')
+            ) {
+                console.log('LOGIN REQUEST:', request.url());
+            }
+        });
+
+        page.on('response', response => {
+            if (
+                response.request().method() === 'POST' &&
+                response.url().includes('/usuarios/login')
+            ) {
+                console.log(
+                    'LOGIN RESPONSE:',
+                    response.status(),
+                    response.url()
+                );
+            }
+        });
+
+        // 6. Hacer clic en ingresar
+        await page.getByRole('button', { name: 'Ingresar' }).click();
+
+        // 7. Dar tiempo al frontend para procesar el login
+        await page.waitForTimeout(3000);
+
+        console.log('URL después del login:', page.url());
+
+        // 8. El login no debe dejar al usuario en /login
+        if (page.url().includes('/login')) {
+
+            const bodyText = await page.locator('body').innerText();
+
+            throw new Error(
+                `El inicio de sesión no fue exitoso.\n` +
+                `URL actual: ${page.url()}\n` +
+                `Contenido: ${bodyText}`
+            );
+        }
+
+        // 9. Ir directamente al módulo PQRS
+        await page.goto('http://localhost:3000/pqrs', {
+            waitUntil: 'networkidle'
+        });
+
+        // 10. Confirmar que PQRS cargó
+        await expect(page).not.toHaveURL(/\/login/, {
+            timeout: 10000
+        });
+
+        await expect(
+            page.locator('body')
+        ).toContainText('PQRS', {
+            timeout: 10000
+        });
+    });
+
+
+    test('El administrador debería poder ver la lista de PQRS en el navegador', async ({ page }) => {
+
+        const historial = page.getByText('Historial', {
+            exact: true
+        });
+
+        await expect(historial).toBeVisible({
+            timeout: 10000
+        });
+
+        await historial.click();
+
+        const tabla = page.locator('.pqrs-table');
+
+        await expect(tabla).toBeVisible({
+            timeout: 10000
+        });
+
+        const pqrsItems = page.locator(
+            '.pqrs-table tbody tr.ant-table-row'
+        );
+
         const count = await pqrsItems.count();
 
-        // Si hay al menos un PQRS, la prueba pasa
-        if (count > 0) {
-            console.log(`✓ Se encontraron ${count} PQRS`);
-            await expect(pqrsItems.first()).toBeVisible();
-        } else {
-            console.log('⚠ No se encontraron PQRS en la lista');
-        }
+        console.log(`✓ Se encontraron ${count} registros de PQRS`);
+
+        expect(count).toBeGreaterThan(0);
     });
 
-    test('El administrador debería poder crear un nuevo PQRS', async ({ page }) => {
-        // 1. Navega a la página de PQRS
-        await page.goto('http://localhost:3000/admin/pqrs', { waitUntil: 'networkidle' });
 
-        // 2. Busca el botón de crear PQRS
-        const btnCrear = page.locator('button:has-text("Crear"), button:has-text("Nueva"), button:has-text("Agregar")');
+    test('El administrador debería poder abrir el formulario de una nueva PQRS', async ({ page }) => {
 
-        if (await btnCrear.count() > 0) {
-            console.log('✓ Botón de crear encontrado');
-            await btnCrear.first().click();
+        const nuevaPqrs = page.getByText('Nueva PQRS', {
+            exact: true
+        });
 
-            // 3. Espera que se abra el formulario
-            await page.waitForSelector('input, textarea', { timeout: 5000 }).catch(() => {
-                console.log('Formulario no encontrado');
-            });
+        await expect(nuevaPqrs).toBeVisible({
+            timeout: 10000
+        });
 
-            console.log('✓ Formulario de PQRS abierto correctamente');
-        } else {
-            console.log('⚠ Botón de crear PQRS no encontrado');
-        }
+        await nuevaPqrs.click();
+
+        await expect(
+            page.getByText('Radicar una PQRS', {
+                exact: true
+            })
+        ).toBeVisible({
+            timeout: 5000
+        });
+
+        await expect(
+            page.locator('textarea')
+        ).toBeVisible({
+            timeout: 5000
+        });
+
+        console.log(
+            '✓ Formulario de nueva PQRS abierto correctamente'
+        );
     });
 
-    test('El administrador debería poder filtrar PQRS por tipo', async ({ page }) => {
-        // 1. Navega a la página de PQRS
-        await page.goto('http://localhost:3000/admin/pqrs', { waitUntil: 'networkidle' });
 
-        // 2. Busca elementos de filtro
-        const filtros = page.locator('select, [role="combobox"]');
-        const count = await filtros.count();
+    test('El administrador debería poder buscar PQRS en el historial', async ({ page }) => {
 
-        if (count > 0) {
-            console.log(`✓ Se encontraron ${count} filtros disponibles`);
+        const historial = page.getByText('Historial', {
+            exact: true
+        });
 
-            // 3. Selecciona el primer filtro
-            await filtros.first().click();
-            console.log('✓ Filtro seleccionado');
-        } else {
-            console.log('⚠ No se encontraron filtros de tipo PQRS');
-        }
+        await expect(historial).toBeVisible({
+            timeout: 10000
+        });
+
+        await historial.click();
+
+       const buscador = page.getByRole('main').getByRole('textbox', {
+    name: 'Buscar...'
+});
+
+        await expect(buscador).toBeVisible({
+            timeout: 10000
+        });
+
+        await buscador.fill('Queja');
+
+        await page.waitForTimeout(500);
+
+        const resultados = page.locator(
+            '.pqrs-table tbody tr.ant-table-row'
+        );
+
+        const count = await resultados.count();
+
+        console.log(
+            `✓ La búsqueda encontró ${count} PQRS relacionadas con "Queja"`
+        );
+
+        expect(count).toBeGreaterThan(0);
     });
+
 });
